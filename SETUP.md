@@ -68,3 +68,5 @@ which is committed so results can be reviewed.
 > explains the benchmark pass criteria, and section 10 analyzes the measured
 > results (throughput ceiling, latency, error mix, and the limitations of the
 > setup).
+
+## 6. View WRITEUP.md for deliverable summary
