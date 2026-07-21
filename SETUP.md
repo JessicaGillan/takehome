@@ -14,13 +14,6 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 ```
 
-Confirm you're in the venv on the right interpreter:
-
-```bash
-python --version   # Python 3.13.x
-which python       # .../.venv/bin/python
-```
-
 ## 2. Install dependencies
 
 ```bash
@@ -28,10 +21,6 @@ pip install -r requirements.txt
 ```
 
 ## 3. Authenticate to Google Cloud
-
-Two separate credentials — you need both. The first authenticates the CLI;
-the second writes Application Default Credentials, which is what the SDK
-actually reads.
 
 ```bash
 gcloud auth login
@@ -49,27 +38,9 @@ cp .env.example .env
 Open `.env` and set the three required values — everything else already has a
 working default:
 
-| Variable                | Set it to                                          |
-| ----------------------- | -------------------------------------------------- |
-| `GOOGLE_CLOUD_PROJECT`  | your Vertex AI project ID                          |
-| `GOOGLE_CLOUD_LOCATION` | the region to call, e.g. `us-central1`             |
-| `GEMINI_MODEL`          | the model ID, e.g. `gemini-2.5-flash`              |
-
-`.env` is gitignored; `.env.example` is committed, so keep real values out of
-the template. `llm/gemini.py` calls `load_dotenv()` at import, so no manual
-`export` is needed — though a variable already exported in your shell takes
-precedence over the same key in `.env`.
-
-Optional overrides, with the defaults baked into `llm/gemini.py`:
-
-| Variable                   | Default | Purpose                                                |
-| -------------------------- | ------- | ------------------------------------------------------ |
-| `GEMINI_THINKING_BUDGET`   | `0`     | `0` off, `-1` dynamic, `N` hard cap on thinking tokens |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `1000`  | Cap on answer tokens; must be positive                 |
-| `GEMINI_MAX_CONNECTIONS`   | `100`   | httpx connection-pool size — the real client-side concurrency ceiling; raise for high-rate benchmarks |
-
-`TOGETHER_API_KEY` and `TOGETHER_MODEL` are only needed if you use the Together
-provider; they are commented out in the template.
+| Variable               | Set it to                 |
+| ---------------------- | ------------------------- |
+| `GOOGLE_CLOUD_PROJECT` | your Vertex AI project ID |
 
 ## 5. Verify
 
@@ -79,12 +50,21 @@ Confirm ADC is live:
 gcloud auth application-default print-access-token
 ```
 
-Then a one-shot end-to-end check against Vertex:
+Confirm the gemini integration works and run load tests:
 
 ```bash
-python -c "from google import genai; \
-print(genai.Client(vertexai=True, project='$GOOGLE_CLOUD_PROJECT', location='$GOOGLE_CLOUD_LOCATION')\
-.models.generate_content(model='gemini-2.5-flash', contents='ping').text)"
+.venv/bin/python -m pytest                   # offline suite first: free, no credentials
+.venv/bin/python -m pytest -m integration    # 1 live request — proves auth + the Vertex path
+.venv/bin/python -m pytest -m loadtest       # 3 load scenarios, up to $1.50
+.venv/bin/python -m pytest -m benchmark      # 3 production-rate tiers, budgets sum $3.25
 ```
 
-A printed reply means auth, permissions, and the Vertex path all work.
+Each live marker bills real requests to `GOOGLE_CLOUD_PROJECT` and must be
+named explicitly — no other command selects them. Load runs write one JSONL
+row per request plus an `.analysis.json` summary to `tests/bench/results/`
+(gitignored).
+
+> **Reading the results:** see [VERIFICATION.md](VERIFICATION.md) — section 9
+> explains the benchmark pass criteria, and section 10 analyzes the measured
+> results (throughput ceiling, latency, error mix, and the limitations of the
+> setup).
