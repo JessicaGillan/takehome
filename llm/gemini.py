@@ -1,7 +1,6 @@
 import os
 
 import httpx
-from dotenv import load_dotenv
 from google.genai import Client
 from google.genai.types import (
     GenerateContentConfig,
@@ -12,8 +11,6 @@ from google.genai.types import (
 )
 
 from llm import LLM
-
-load_dotenv()  # reads .env into os.environ; existing env vars win by default
 
 # Cap on the tokens generated per response when GEMINI_MAX_OUTPUT_TOKENS is unset.
 DEFAULT_MAX_OUTPUT_TOKENS = 1000

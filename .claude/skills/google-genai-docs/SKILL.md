@@ -41,7 +41,8 @@ memory-based and unverified rather than presenting it as confirmed.
 
 ## Project conventions
 
-- Client construction and env loading follow `llm/gemini.py`: `load_dotenv()`,
-  then `genai.Client(...)`, with model IDs read from the environment
-  (`GEMINI_MODEL`) rather than hardcoded.
+- Client construction follows `llm/gemini.py`: `genai.Client(...)` with model
+  IDs read from the environment (`GEMINI_MODEL`) rather than hardcoded.
+  Production code never loads `.env` itself — `tests/conftest.py` calls
+  `load_dotenv()` for test runs; deployments inject real env vars.
 - Credentials and model names live in `.env` — never inline an API key.
