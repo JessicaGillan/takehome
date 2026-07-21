@@ -6,6 +6,23 @@
 
 ## Core Commands
 
+### Running tests
+
+```bash
+.venv/bin/python -m pytest                              # full suite (offline)
+.venv/bin/python -m pytest tests/test_file.py::test_fn  # single test
+.venv/bin/python -m pytest -m integration               # live API; needs ADC, costs money
+```
+
+Integration tests are excluded from the default run by `addopts` in `pytest.ini`
+and must be opted into with `-m integration`. They issue real billable requests
+against `GOOGLE_CLOUD_PROJECT` and need application default credentials
+(`gcloud auth application-default login`).
+
+Call the interpreter in `.venv/` explicitly. A bare `pytest` resolves to
+whichever interpreter is on `PATH`, which is not this project's virtualenv
+unless `.venv/bin/activate` has been sourced in the current shell.
+
 ### Adding a dependency
 
 Install, then pin the resolved version in `requirements.txt` by hand:
@@ -18,11 +35,6 @@ pip show PACKAGE | grep -i version   # add to requirements.txt as PACKAGE==X.Y.Z
 Do not use `pip freeze` to update `requirements.txt` — it writes the full
 transitive tree and obscures the project's direct dependencies. Pin direct
 dependencies only.
-
-## Development & Quality Checks
-
-- Run Tests: `pytest`
-- Run Single Test: `pytest tests/test_file.py::test_function`
 
 ## Project Structure Conventions
 
