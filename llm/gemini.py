@@ -99,7 +99,7 @@ class Gemini(LLM):
                 max_output_tokens=self.__max_output_tokens,
                 # see the thinking budget rules in __init__
                 thinking_config=self.__thinking_config,
-                response_logprobs=True,  # Enables the logprobsfeature
+                response_logprobs=True,  # Enables the logprobs feature
                 logprobs=NUMBER_ALTERNATIVE_TOKEN_OPTIONS # Returns 1 top alternative option (matching Together functionality)
             ),
         )
