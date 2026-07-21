@@ -70,3 +70,5 @@ which is committed so results can be reviewed.
 > setup).
 
 ## 6. View WRITEUP.md for deliverable summary
+
+See [WRITEUP.md](WRITEUP.md)
