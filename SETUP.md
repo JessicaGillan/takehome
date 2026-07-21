@@ -66,6 +66,7 @@ Optional overrides, with the defaults baked into `llm/gemini.py`:
 | -------------------------- | ------- | ------------------------------------------------------ |
 | `GEMINI_THINKING_BUDGET`   | `0`     | `0` off, `-1` dynamic, `N` hard cap on thinking tokens |
 | `GEMINI_MAX_OUTPUT_TOKENS` | `1000`  | Cap on answer tokens; must be positive                 |
+| `GEMINI_MAX_CONNECTIONS`   | `100`   | httpx connection-pool size — the real client-side concurrency ceiling; raise for high-rate benchmarks |
 
 `TOGETHER_API_KEY` and `TOGETHER_MODEL` are only needed if you use the Together
 provider; they are commented out in the template.

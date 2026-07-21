@@ -1,11 +1,13 @@
 import os
 
+import httpx
 from dotenv import load_dotenv
 from google.genai import Client
 from google.genai.types import (
     GenerateContentConfig,
     GenerateContentResponse,
     GenerateContentResponseUsageMetadata,
+    HttpOptions,
     ThinkingConfig,
 )
 
@@ -26,8 +28,12 @@ MIN_THINKING_BUDGET = 0
 MAX_THINKING_BUDGET = 24576
 DEFAULT_THINKING_BUDGET = THINKING_BUDGET_DISABLED
 
-# Ceiling on concurrent in-flight requests, consumed by callers via parallelism().
-MAX_CONCURRENT_REQUESTS = 100
+# Ceiling on concurrent in-flight requests, reported to callers via parallelism().
+# This sizes the underlying httpx connection pool, which is the real client-side
+# limit: httpx defaults to 100 connections and quietly queues everything beyond
+# that, so a higher target rate needs a bigger pool, not just more callers.
+DEFAULT_MAX_CONNECTIONS = 100
+MIN_MAX_CONNECTIONS = 1
 
 NUMBER_ALTERNATIVE_TOKEN_OPTIONS = 1
 
@@ -53,10 +59,23 @@ class Gemini(LLM):
         return reason.value if reason is not None else None
 
     def __init__(self):
+        # see the connection-pool constants at the top of the file
+        self.__max_connections = int(os.getenv("GEMINI_MAX_CONNECTIONS", DEFAULT_MAX_CONNECTIONS))
+        if self.__max_connections < MIN_MAX_CONNECTIONS:
+            raise ValueError(f"max_connections {self.__max_connections} must be positive")
+
         self.__client = Client(
             enterprise=True,
             project=os.getenv("GOOGLE_CLOUD_PROJECT"),
             location=os.getenv("GOOGLE_CLOUD_LOCATION"),
+            http_options=HttpOptions(
+                async_client_args={
+                    "limits": httpx.Limits(
+                        max_connections=self.__max_connections,
+                        max_keepalive_connections=self.__max_connections,
+                    ),
+                },
+            ),
         ).aio
         self.__model = os.getenv("GEMINI_MODEL")
 
@@ -78,7 +97,7 @@ class Gemini(LLM):
         )
 
     def parallelism(self) -> int:
-        return MAX_CONCURRENT_REQUESTS
+        return self.__max_connections
 
     async def aclose(self) -> None:
         """Release the async client's connection pool. Callers own the lifetime.

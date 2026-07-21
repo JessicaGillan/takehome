@@ -1,8 +1,12 @@
+from types import SimpleNamespace
+
 import pytest
 from google.genai.types import Candidate, FinishReason, GenerateContentResponse
 
 from llm import LLM, Gemini
+from llm import gemini as gemini_module
 from llm.gemini import (
+    DEFAULT_MAX_CONNECTIONS,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_THINKING_BUDGET,
     MAX_THINKING_BUDGET,
@@ -92,3 +96,32 @@ def test_simple_response_finish_reason_defaults_to_none() -> None:
     response = LLM.SimpleResponse(answer="hi", input_tokens=1, output_tokens=2)
 
     assert response.finish_reason is None
+
+def test_max_connections_defaults_and_reaches_parallelism(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GEMINI_MAX_CONNECTIONS", raising=False)
+
+    assert Gemini().parallelism() == DEFAULT_MAX_CONNECTIONS
+
+def test_max_connections_env_reaches_the_connection_pool(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_MAX_CONNECTIONS", "640")
+    captured: dict = {}
+
+    def recording_client(**kwargs) -> SimpleNamespace:
+        captured.update(kwargs)
+        return SimpleNamespace(aio="aio-half")
+
+    monkeypatch.setattr(gemini_module, "Client", recording_client)
+
+    client = Gemini()
+
+    limits = captured["http_options"].async_client_args["limits"]
+    assert limits.max_connections == 640
+    assert limits.max_keepalive_connections == 640
+    assert client.parallelism() == 640
+
+@pytest.mark.parametrize("value", ["0", "-1"])
+def test_non_positive_max_connections_is_rejected(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
+    monkeypatch.setenv("GEMINI_MAX_CONNECTIONS", value)
+
+    with pytest.raises(ValueError, match="must be positive"):
+        Gemini()
