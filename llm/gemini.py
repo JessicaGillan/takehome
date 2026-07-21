@@ -111,4 +111,5 @@ class Gemini(LLM):
             input_tokens=usage.prompt_token_count,
             output_tokens=self.__total_output_tokens(usage),
             finish_reason=self.__finish_reason(response),
+            model_version=response.model_version,
         )

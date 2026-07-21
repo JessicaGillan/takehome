@@ -9,8 +9,12 @@ class Together(LLM):
         self.__client = AsyncTogether(api_key=os.getenv("TOGETHER_API_KEY"))
         self.__model = os.getenv("TOGETHER_MODEL")
 
-    def parallelism(self):
+    def parallelism(self) -> int:
         return 100
+
+    async def aclose(self) -> None:
+        """Release the async client's connection pool. Callers own the lifetime."""
+        await self.__client.close()
 
     async def ask_generic_question(self, system_prompt: str, question: str, temperature: float) -> LLM.SimpleResponse:
         response = await self.__client.chat.completions.create(

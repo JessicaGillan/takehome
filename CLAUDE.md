@@ -12,12 +12,19 @@
 .venv/bin/python -m pytest                              # full suite (offline)
 .venv/bin/python -m pytest tests/test_file.py::test_fn  # single test
 .venv/bin/python -m pytest -m integration               # live API; needs ADC, costs money
+.venv/bin/python -m pytest -m loadtest                  # live load benchmark; up to $1.50 per run
 ```
 
-Integration tests are excluded from the default run by `addopts` in `pytest.ini`
-and must be opted into with `-m integration`. They issue real billable requests
+Both live markers are excluded from the default run by `addopts` in
+`pytest.ini` and must be opted into by name. They issue real billable requests
 against `GOOGLE_CLOUD_PROJECT` and need application default credentials
 (`gcloud auth application-default login`).
+
+`integration` and `loadtest` are **separate and never run together**:
+`-m integration` is a handful of single requests, while `-m loadtest` drives
+sustained load (3 scenarios × up to 100 requests / $0.50 each) through
+`tests/bench/`. Running `-m loadtest` spends real money at a materially higher
+rate, so it is opt-in on its own and no other command selects it.
 
 Call the interpreter in `.venv/` explicitly. A bare `pytest` resolves to
 whichever interpreter is on `PATH`, which is not this project's virtualenv
