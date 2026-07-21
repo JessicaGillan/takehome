@@ -29,6 +29,8 @@ DEFAULT_THINKING_BUDGET = THINKING_BUDGET_DISABLED
 # Ceiling on concurrent in-flight requests, consumed by callers via parallelism().
 MAX_CONCURRENT_REQUESTS = 100
 
+NUMBER_ALTERNATIVE_TOKEN_OPTIONS = 1
+
 class Gemini(LLM):
     @staticmethod
     def __total_output_tokens(usage: GenerateContentResponseUsageMetadata) -> int:
@@ -97,6 +99,8 @@ class Gemini(LLM):
                 max_output_tokens=self.__max_output_tokens,
                 # see the thinking budget rules in __init__
                 thinking_config=self.__thinking_config,
+                response_logprobs=True,  # Enables the logprobsfeature
+                logprobs=NUMBER_ALTERNATIVE_TOKEN_OPTIONS # Returns 1 top alternative option (matching Together functionality)
             ),
         )
 
