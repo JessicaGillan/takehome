@@ -61,8 +61,8 @@ Confirm the gemini integration works and run load tests:
 
 Each live marker bills real requests to `GOOGLE_CLOUD_PROJECT` and must be
 named explicitly — no other command selects them. Load runs write one JSONL
-row per request plus an `.analysis.json` summary to `tests/bench/results/`
-(gitignored).
+row per request plus an `.analysis.json` summary to `tests/bench/results/`,
+which is committed so results can be reviewed.
 
 > **Reading the results:** see [VERIFICATION.md](VERIFICATION.md) — section 9
 > explains the benchmark pass criteria, and section 10 analyzes the measured

@@ -226,5 +226,3 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Bench harness output (tests/bench/): generated JSONL + analysis per run
-tests/bench/results/

@@ -194,7 +194,7 @@ permissions, and the real Vertex path.
   deterministic).
 - `pytest -m loadtest` — three scenarios with different pacing/concurrency/retry
   settings, each hard-capped at 100 requests / \$0.50. Writes one JSONL row per
-  request plus an analysis summary to `tests/bench/results/` (gitignored).
+  request plus an analysis summary to `tests/bench/results/`.
 
 The `thin-retry-budget` scenario (`max_attempts=1`) exists to make 429s visible
 in the output instead of absorbed by retries — useful for finding where Dynamic
@@ -259,10 +259,12 @@ is read).
 
 What actually happened when the live suites ran, in plain language. All six
 runs against one Google Cloud project on a single afternoon; every number
-below comes from the saved `*.analysis.json` files (the raw
-`tests/bench/results/` files are gitignored, so these tables are the durable
-record). Latency is end-to-end **including retries**, so a row that succeeded
-on its second attempt carries its first attempt and the backoff in between.
+below comes from the `*.analysis.json` files in `tests/bench/results/`, which
+are committed alongside the raw per-request JSONL so the analysis can be
+re-derived and reviewed. (The lone `benchmark-20k-*.jsonl` holds a single row
+— the surviving artifact of the run that died on the fd limit.) Latency is
+end-to-end **including retries**, so a row that succeeded on its second
+attempt carries its first attempt and the backoff in between.
 
 | run          | limiter (rps / burst / conc / attempts) | attempted rpm | useful rpm | ok %  | 429 %    | truncated % | p50 / p95 latency | cost   |
 | ------------ | --------------------------------------- | ------------- | ---------- | ----- | -------- | ----------- | ----------------- | ------ |

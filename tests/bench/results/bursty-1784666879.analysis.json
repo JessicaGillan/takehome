@@ -1,0 +1,18 @@
+{
+  "requests": 100,
+  "useful": 100,
+  "wall_seconds": 43.05,
+  "attempted_rps": 2.3,
+  "goodput_rps": 2.3,
+  "goodput_rpm": 139.0,
+  "error_rates": {
+    "ok": 1.0
+  },
+  "latency_s": {
+    "p50": 1.386,
+    "p95": 9.213,
+    "p99": 10.965
+  },
+  "total_cost_usd": 0.0304,
+  "cost_per_1k_useful_usd": 0.3042
+}
