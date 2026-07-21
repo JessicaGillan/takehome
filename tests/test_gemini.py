@@ -1,13 +1,21 @@
 import pytest
+from google.genai.types import Candidate, FinishReason, GenerateContentResponse
 
-from llm import Gemini
+from llm import LLM, Gemini
+from llm.gemini import (
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_THINKING_BUDGET,
+    MAX_THINKING_BUDGET,
+    THINKING_BUDGET_DISABLED,
+    THINKING_BUDGET_DYNAMIC,
+)
 
 @pytest.mark.parametrize(
     "budget",
     [
-        "-1",     # dynamic thinking
-        "0",      # thinking disabled
-        "24576",  # upper bound for 2.5 Flash
+        str(THINKING_BUDGET_DYNAMIC),
+        str(THINKING_BUDGET_DISABLED),
+        str(MAX_THINKING_BUDGET),
     ],
 )
 def test_valid_budgets_reach_thinking_config(monkeypatch: pytest.MonkeyPatch, budget: str) -> None:
@@ -19,7 +27,7 @@ def test_valid_budgets_reach_thinking_config(monkeypatch: pytest.MonkeyPatch, bu
     assert config.thinking_budget == int(budget)
     assert config.include_thoughts is False
 
-@pytest.mark.parametrize("budget", ["24577", "-2"])
+@pytest.mark.parametrize("budget", [str(MAX_THINKING_BUDGET + 1), "-2"])
 def test_out_of_range_budget_is_rejected(monkeypatch: pytest.MonkeyPatch, budget: str) -> None:
     monkeypatch.setenv("GEMINI_THINKING_BUDGET", budget)
 
@@ -31,7 +39,7 @@ def test_budget_defaults_to_disabled_when_unset(monkeypatch: pytest.MonkeyPatch)
 
     client = Gemini()
 
-    assert client._Gemini__thinking_config.thinking_budget == 0
+    assert client._Gemini__thinking_config.thinking_budget == DEFAULT_THINKING_BUDGET
 
 def test_max_output_tokens_read_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_MAX_OUTPUT_TOKENS", "512")
@@ -41,7 +49,7 @@ def test_max_output_tokens_read_from_env(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_max_output_tokens_defaults_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("GEMINI_MAX_OUTPUT_TOKENS", raising=False)
 
-    assert Gemini()._Gemini__max_output_tokens == 10
+    assert Gemini()._Gemini__max_output_tokens == DEFAULT_MAX_OUTPUT_TOKENS
 
 @pytest.mark.parametrize("value", ["0", "-1"])
 def test_non_positive_max_output_tokens_is_rejected(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
@@ -49,3 +57,38 @@ def test_non_positive_max_output_tokens_is_rejected(monkeypatch: pytest.MonkeyPa
 
     with pytest.raises(ValueError, match="must be positive"):
         Gemini()
+
+@pytest.mark.parametrize(
+    "reason,expected",
+    [
+        (FinishReason.STOP, "STOP"),
+        (FinishReason.MAX_TOKENS, "MAX_TOKENS"),  # response hit the output cap
+        (FinishReason.SAFETY, "SAFETY"),
+    ],
+)
+def test_finish_reason_is_returned_as_plain_string(reason: FinishReason, expected: str) -> None:
+    response = GenerateContentResponse(candidates=[Candidate(finish_reason=reason)])
+
+    result = Gemini._Gemini__finish_reason(response)
+
+    assert result == expected
+    assert type(result) is str  # not the SDK enum, which subclasses str
+
+@pytest.mark.parametrize(
+    "candidates",
+    [
+        None,                                # prompt blocked before generation
+        [],                                  # no candidate returned
+        [Candidate(finish_reason=None)],     # candidate without a reason
+    ],
+)
+def test_missing_finish_reason_is_none(candidates: list[Candidate] | None) -> None:
+    response = GenerateContentResponse(candidates=candidates)
+
+    assert Gemini._Gemini__finish_reason(response) is None
+
+def test_simple_response_finish_reason_defaults_to_none() -> None:
+    # Together and any other provider construct SimpleResponse without it.
+    response = LLM.SimpleResponse(answer="hi", input_tokens=1, output_tokens=2)
+
+    assert response.finish_reason is None
