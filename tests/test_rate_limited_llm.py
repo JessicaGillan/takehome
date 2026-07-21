@@ -105,11 +105,14 @@ async def test_burst_allows_capacity_requests_without_waiting(clock: FakeClock) 
 
     assert clock.now == pytest.approx(1 / 8)  # the next one is paced
 
-async def test_max_concurrent_is_never_exceeded() -> None:
+@pytest.mark.parametrize("max_concurrent", [1, 4, 7])
+async def test_max_concurrent_is_never_exceeded(max_concurrent: int) -> None:
     # Real event loop and real sleeps: the semaphore bounds actual interleaving,
     # and a fake clock would collapse the overlap this test depends on.
-    max_concurrent = 4
-    requests = 20
+    #
+    # Parametrized so the cap is proven to track the argument rather than a
+    # hardcoded value. max_concurrent=1 doubles as the serialization guard.
+    requests = max_concurrent * 5
     in_flight = 0
     peak = 0
 

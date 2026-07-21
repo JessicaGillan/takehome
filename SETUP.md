@@ -21,13 +21,13 @@ python --version   # Python 3.13.x
 which python       # .../.venv/bin/python
 ```
 
-## 3. Install dependencies
+## 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 4. Authenticate to Google Cloud
+## 3. Authenticate to Google Cloud
 
 Two separate credentials — you need both. The first authenticates the CLI;
 the second writes Application Default Credentials, which is what the SDK
@@ -38,27 +38,39 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
-## 5. Configure environment
+## 4. Configure environment
 
-The Gemini provider selects Vertex AI when `GOOGLE_CLOUD_PROJECT` is set, and
-defaults the region to `us-central1`.
+Copy the committed template, then edit your copy:
 
 ```bash
-export GOOGLE_CLOUD_PROJECT=PROJECT_ID
-export GOOGLE_CLOUD_LOCATION=us-central1
+cp .env.example .env
 ```
 
-Optional overrides (sensible defaults are baked in):
+Open `.env` and set the three required values — everything else already has a
+working default:
 
-| Variable                   | Default            | Purpose                                                |
-| -------------------------- | ------------------ | ------------------------------------------------------ |
-| `GEMINI_MODEL`             | `gemini-2.5-flash` | Model ID                                               |
-| `GEMINI_THINKING_BUDGET`   | `0`                | `0` off, `-1` dynamic, `N` hard cap on thinking tokens |
-| `GEMINI_MAX_OUTPUT_TOKENS` | unset              | Cap on answer tokens                                   |
-| `GEMINI_PARALLELISM`       | `100`              | Client-side concurrency cap                            |
-| `GEMINI_MAX_RETRIES`       | `5`                | Retry attempts on 429/5xx (Dynamic Shared Quota)       |
+| Variable                | Set it to                                          |
+| ----------------------- | -------------------------------------------------- |
+| `GOOGLE_CLOUD_PROJECT`  | your Vertex AI project ID                          |
+| `GOOGLE_CLOUD_LOCATION` | the region to call, e.g. `us-central1`             |
+| `GEMINI_MODEL`          | the model ID, e.g. `gemini-2.5-flash`              |
 
-## 6. Verify
+`.env` is gitignored; `.env.example` is committed, so keep real values out of
+the template. `llm/gemini.py` calls `load_dotenv()` at import, so no manual
+`export` is needed — though a variable already exported in your shell takes
+precedence over the same key in `.env`.
+
+Optional overrides, with the defaults baked into `llm/gemini.py`:
+
+| Variable                   | Default | Purpose                                                |
+| -------------------------- | ------- | ------------------------------------------------------ |
+| `GEMINI_THINKING_BUDGET`   | `0`     | `0` off, `-1` dynamic, `N` hard cap on thinking tokens |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `1000`  | Cap on answer tokens; must be positive                 |
+
+`TOGETHER_API_KEY` and `TOGETHER_MODEL` are only needed if you use the Together
+provider; they are commented out in the template.
+
+## 5. Verify
 
 Confirm ADC is live:
 
